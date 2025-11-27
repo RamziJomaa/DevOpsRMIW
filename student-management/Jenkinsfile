@@ -1,13 +1,14 @@
 properties([
   pipelineTriggers([
-    cron('H/5 * * * *') // toutes les 5 minutes
+    cron('H/5 * * * *'),     // toutes les 5 minutes
+    githubPush()             // déclencheur GitHub webhook
   ])
 ])
 
 pipeline {
     agent any
     tools { 
-        maven 'Maven-3.6.3'   // Remplace par le nom exact de ton Maven configuré
+        maven 'Maven-3.6.3'
     }
 
     options {
