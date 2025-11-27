@@ -1,0 +1,53 @@
+properties([
+  pipelineTriggers([
+    cron('H/5 * * * *') // toutes les 5 minutes
+  ])
+])
+
+pipeline {
+    agent any
+    tools { 
+        maven 'Maven-3.6.3'   // Remplace par le nom exact de ton Maven configuré
+    }
+
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'RAMZI',
+                    url: 'https://github.com/RamziJomaa/DevOpsRMIW.git'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                dir('student-management') {
+                    sh 'mvn clean install -DskipTests'
+                }
+            }
+        }
+
+        stage('Package') {
+            steps {
+                dir('student-management') {
+                    sh 'mvn package -DskipTests'
+                    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '✅ Build et packaging réussis pour student-management'
+        }
+        failure {
+            echo '❌ Pipeline échoué, vérifie les logs.'
+        }
+    }
+}
+
