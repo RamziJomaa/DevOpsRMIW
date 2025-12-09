@@ -1,0 +1,112 @@
+pipeline {
+  agent any
+
+  environment {
+    SONAR_HOST = "http://localhost:9000"
+    MAVEN_OPTS = "-Dmaven.wagon.http.pool=false"
+  }
+
+  tools {
+    maven 'Maven 3.9.6'  // Adjust to your configured Maven name
+    jdk 'jdk17'          // Adjust to your configured JDK name
+  }
+
+  options {
+    timestamps()
+    disableConcurrentBuilds()
+    buildDiscarder(logRotator(numToKeepStr: '20'))
+  }
+
+  stages {
+    stage('GIT') {
+      steps {
+        // Clone repo branch RAMZI
+        git branch: 'RAMZI', url: 'https://github.com/RamziJomaa/DevOpsRMIW.git'
+        // Confirm project subdirectory
+        sh 'test -d student-management || (echo "Missing student-management dir" && exit 1)'
+      }
+    }
+
+    stage('MVN CLEAN') {
+      steps {
+        dir('student-management') {
+          sh 'mvn -V clean'
+        }
+      }
+    }
+
+    stage('MVN COMPILE') {
+      steps {
+        dir('student-management') {
+          sh 'mvn -U compile'
+        }
+      }
+    }
+
+    stage('MVN TEST') {
+      steps {
+        dir('student-management') {
+          sh 'mvn test'
+        }
+      }
+      post {
+        always {
+          // Publish unit test reports
+          junit 'student-management/target/surefire-reports/*.xml'
+        }
+      }
+    }
+
+    stage('MVN PACKAGE') {
+      steps {
+        dir('student-management') {
+          sh 'mvn -DskipTests package'
+        }
+        // Archive the jar for traceability
+        archiveArtifacts artifacts: 'student-management/target/*.jar', fingerprint: true
+      }
+    }
+
+    stage('SONARQUBE ANALYSIS') {
+      environment {
+        SONAR_TOKEN = credentials('SONAR_TOKEN')
+      }
+      steps {
+        dir('student-management') {
+          sh """
+            mvn sonar:sonar \
+              -Dsonar.projectKey=student-management \
+              -Dsonar.host.url=${SONAR_HOST} \
+              -Dsonar.token=${SONAR_TOKEN}
+          """
+        }
+      }
+    }
+
+    stage('DOCKER BUILD') {
+      steps {
+        dir('student-management') {
+          sh 'docker build -t ramzijomaa/student-management:0.0.6 .'
+        }
+      }
+    }
+
+    // Optional: push image, enable when ready and credentials exist
+    stage('DOCKER PUSH') {
+      when { expression { return false } } // set to true when you want to push
+      steps {
+        echo 'Configure Docker registry credentials and enable this stage.'
+      }
+    }
+  }
+
+  post {
+    success {
+      echo 'Pipeline OK — GIT, CLEAN, COMPILE, TEST, PACKAGE, SONAR, DOCKER all green.'
+    }
+    failure {
+      echo 'Pipeline FAILED — check stage logs.'
+    }
+  }
+}
+
