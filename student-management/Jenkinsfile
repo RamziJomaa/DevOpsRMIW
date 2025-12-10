@@ -9,8 +9,7 @@ pipeline {
   tools {
     maven 'Maven-3.6.3'   // nom exact configuré dans Jenkins
     jdk 'JDK-17'          // nom exact configuré dans Jenkins
-}
-
+  }
 
   options {
     timestamps()
@@ -21,9 +20,7 @@ pipeline {
   stages {
     stage('GIT') {
       steps {
-        // Clone repo branch RAMZI
         git branch: 'RAMZI', url: 'https://github.com/RamziJomaa/DevOpsRMIW.git'
-        // Confirm project subdirectory
         sh 'test -d student-management || (echo "Missing student-management dir" && exit 1)'
       }
     }
@@ -52,7 +49,6 @@ pipeline {
       }
       post {
         always {
-          // Publish unit test reports
           junit 'student-management/target/surefire-reports/*.xml'
         }
       }
@@ -63,7 +59,6 @@ pipeline {
         dir('student-management') {
           sh 'mvn -DskipTests package'
         }
-        // Archive the jar for traceability
         archiveArtifacts artifacts: 'student-management/target/*.jar', fingerprint: true
       }
     }
@@ -92,9 +87,8 @@ pipeline {
       }
     }
 
-    // Optional: push image, enable when ready and credentials exist
     stage('DOCKER PUSH') {
-      when { expression { return false } } // set to true when you want to push
+      when { expression { return false } }
       steps {
         echo 'Configure Docker registry credentials and enable this stage.'
       }
