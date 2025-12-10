@@ -7,9 +7,10 @@ pipeline {
   }
 
   tools {
-    maven 'Maven 3.9.6'  // Adjust to your configured Maven name
-    jdk 'jdk17'          // Adjust to your configured JDK name
-  }
+    maven 'Maven-3.6.3'   // nom exact configuré dans Jenkins
+    jdk 'JDK-17'          // nom exact configuré dans Jenkins
+}
+
 
   options {
     timestamps()
